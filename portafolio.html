@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Portafolio Académico</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="top">
+    <img class="logo" src="assets/logo-universidad.png" alt="Logo de la universidad" />
+    <div class="titles">
+      <h1 id="titulo-universidad">Portafolio Académico</h1>
+      <p id="subtitulo-universidad">Universidad</p>
+    </div>
+    <div class="user-box">
+      <img class="avatar" src="assets/foto-estudiante.svg" alt="Foto del estudiante" />
+      <div class="name">
+        <strong id="nombre-estudiante">Estudiante</strong>
+        <span id="codigo-estudiante">Código</span>
+      </div>
+      <button class="logout-btn" id="btn-logout">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <img class="hero-avatar" src="assets/foto-estudiante.svg" alt="Foto del estudiante" />
+    <h2 class="hero-title">Bienvenido a mi Portafolio</h2>
+    <p class="hero-sub" id="hero-sub">Registro de evidencias y avances semanales</p>
+    <div class="hero-card">
+      <p><span class="hero-label">Estudiante</span><span id="hero-nombre">—</span></p>
+      <p><span class="hero-label">Código</span><span id="hero-codigo">—</span></p>
+      <p><span class="hero-label">Universidad</span><span id="hero-universidad">—</span></p>
+    </div>
+  </section>
+
+  <nav class="course-tabs" id="course-tabs"></nav>
+  <div id="course-bodies"></div>
+
+  <footer class="note">
+    Los enlaces son la forma recomendada de entregar carpetas o repositorios completos
+    (por ejemplo, un enlace a tu repositorio de GitHub). Los documentos o archivos zip
+    que adjuntes aquí se recuerdan solo en este navegador mientras dure la sesión; para
+    que tu entrega quede permanente, sube el archivo a tu repositorio de GitHub y pega
+    aquí el enlace.
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    protegerPagina();
+
+    // Encabezado con datos de configuración
+    document.getElementById("titulo-universidad").textContent = "Portafolio Académico";
+    document.getElementById("subtitulo-universidad").textContent = CONFIG.universidad;
+    document.getElementById("nombre-estudiante").textContent = CONFIG.nombreEstudiante;
+    document.getElementById("codigo-estudiante").textContent = CONFIG.codigoEstudiante;
+
+    document.getElementById("hero-sub").textContent =
+      "Portafolio de " + CURSOS.map((c) => c.nombre).join(" y ");
+    document.getElementById("hero-nombre").textContent = CONFIG.nombreEstudiante;
+    document.getElementById("hero-codigo").textContent = CONFIG.codigoEstudiante;
+    document.getElementById("hero-universidad").textContent = CONFIG.universidad;
+
+    document.getElementById("btn-logout").addEventListener("click", cerrarSesion);
+
+    let datos = cargarDatos();
+    let panelesAbiertos = {};
+
+    function calcularProgreso(cursoId) {
+      const semanas = datos[cursoId].semanas;
+      let hechas = 0;
+      for (let i = 1; i <= TOTAL_SEMANAS; i++) {
+        if (semanas[i].entregas.length > 0) hechas++;
+      }
+      return hechas;
+    }
+
+    function iconoParaEntrega(entrega) {
+      if (entrega.tipo === "enlace") return "🔗";
+      return "📦";
+    }
+
+    function renderTabs(activoId) {
+      const nav = document.getElementById("course-tabs");
+      nav.innerHTML = "";
+      CURSOS.forEach((curso) => {
+        const hechas = calcularProgreso(curso.id);
+        const pct = Math.round((hechas / TOTAL_SEMANAS) * 100);
+        const btn = document.createElement("button");
+        btn.className = "course-tab" + (curso.id === activoId ? " active" : "");
+        btn.innerHTML = `
+          <span class="code">${curso.codigo} · ${hechas}/${TOTAL_SEMANAS} semanas</span>
+          <span class="name">${curso.nombre}</span>
+          <span class="progress-line"><i style="width:${pct}%"></i></span>
+        `;
+        btn.addEventListener("click", () => mostrarCurso(curso.id));
+        nav.appendChild(btn);
+      });
+    }
+
+    function renderCuerpo(cursoId) {
+      const cont = document.getElementById("course-bodies");
+      cont.innerHTML = "";
+
+      CURSOS.forEach((curso) => {
+        const main = document.createElement("main");
+        main.className = "course-body" + (curso.id === cursoId ? " active" : "");
+        main.id = "body-" + curso.id;
+
+        const grid = document.createElement("div");
+        grid.className = "week-grid";
+
+        for (let i = 1; i <= TOTAL_SEMANAS; i++) {
+          const semana = datos[curso.id].semanas[i];
+          const tieneEntregas = semana.entregas.length > 0;
+          const claveKey = curso.id + "-" + i;
+          const abierto = !!panelesAbiertos[claveKey];
+
+          const entregasHtml = semana.entregas.length
+            ? semana.entregas.map((e, idx) => `
+                <li>
+                  <span class="entry-icon">${iconoParaEntrega(e)}</span>
+                  ${e.tipo === "enlace"
+                    ? `<a class="entry-link" href="${e.valor}" target="_blank" rel="noopener">${e.valor}</a>`
+                    : `<span class="entry-link">${e.valor}</span>`}
+                  <button class="entry-remove" data-curso="${curso.id}" data-semana="${i}" data-idx="${idx}">Quitar</button>
+                </li>
+              `).join("")
+            : `<li><span class="empty-note">Todavía no subiste nada para esta semana.</span></li>`;
+
+          const cardEl = document.createElement("div");
+          cardEl.className = "week-card" + (tieneEntregas ? " done" : "");
+          cardEl.innerHTML = `
+            <div class="week-card-head">
+              <span class="week-card-num">Semana ${i}</span>
+              <span class="status-pill">${tieneEntregas ? "Entregado" : "Pendiente"}</span>
+            </div>
+            <p class="week-tema" contenteditable="true" spellcheck="false"
+              data-placeholder="Escribe aquí el tema de la semana"
+              data-curso="${curso.id}" data-semana="${i}">${semana.tema}</p>
+            <button class="toggle-btn" data-key="${claveKey}">
+              ${tieneEntregas ? "📄 Ver archivos" : "📤 Subir trabajo"}
+            </button>
+            <div class="week-panel" data-panel="${claveKey}" ${abierto ? "" : "hidden"}>
+              <div class="upload-row">
+                <input type="url" placeholder="Pega el enlace de GitHub / carpeta (https://...)"
+                  data-curso="${curso.id}" data-semana="${i}" class="input-enlace" />
+                <button class="add-btn btn-agregar-enlace" data-curso="${curso.id}" data-semana="${i}">Añadir enlace</button>
+              </div>
+              <div class="upload-row">
+                <button class="file-btn btn-elegir-archivo" data-curso="${curso.id}" data-semana="${i}">
+                  📎 Adjuntar documento o zip
+                </button>
+                <input type="file"
+                  accept=".zip,.rar,.7zip,.7z,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png"
+                  style="display:none"
+                  class="input-archivo" data-curso="${curso.id}" data-semana="${i}" />
+              </div>
+              <ul class="entries">${entregasHtml}</ul>
+            </div>
+          `;
+
+          grid.appendChild(cardEl);
+        }
+
+        main.appendChild(grid);
+        cont.appendChild(main);
+      });
+    }
+
+    function mostrarCurso(cursoId) {
+      renderTabs(cursoId);
+      renderCuerpo(cursoId);
+      adjuntarEventos();
+    }
+
+    function adjuntarEventos() {
+      // Mostrar / ocultar panel de entrega
+      document.querySelectorAll(".toggle-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const key = btn.dataset.key;
+          panelesAbiertos[key] = !panelesAbiertos[key];
+          const panel = document.querySelector(`.week-panel[data-panel="${key}"]`);
+          if (panelesAbiertos[key]) {
+            panel.removeAttribute("hidden");
+          } else {
+            panel.setAttribute("hidden", "");
+          }
+        });
+      });
+
+      // Editar tema de la semana
+      document.querySelectorAll(".week-tema").forEach((el) => {
+        el.addEventListener("blur", () => {
+          const curso = el.dataset.curso;
+          const semana = el.dataset.semana;
+          datos[curso].semanas[semana].tema = el.textContent.trim();
+          guardarDatos(datos);
+        });
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); el.blur(); }
+        });
+      });
+
+      // Añadir enlace
+      document.querySelectorAll(".btn-agregar-enlace").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const curso = btn.dataset.curso;
+          const semana = btn.dataset.semana;
+          const input = document.querySelector(
+            `.input-enlace[data-curso="${curso}"][data-semana="${semana}"]`
+          );
+          const valor = input.value.trim();
+          if (!valor) return;
+          datos[curso].semanas[semana].entregas.push({ tipo: "enlace", valor });
+          guardarDatos(datos);
+          const cursoActivo = document.querySelector(".course-body.active").id.replace("body-", "");
+          mostrarCurso(cursoActivo);
+        });
+      });
+
+      // Adjuntar archivo (nombre + enlace temporal de descarga en este navegador)
+      document.querySelectorAll(".btn-elegir-archivo").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const curso = btn.dataset.curso;
+          const semana = btn.dataset.semana;
+          document.querySelector(
+            `.input-archivo[data-curso="${curso}"][data-semana="${semana}"]`
+          ).click();
+        });
+      });
+
+      document.querySelectorAll(".input-archivo").forEach((input) => {
+        input.addEventListener("change", () => {
+          const curso = input.dataset.curso;
+          const semana = input.dataset.semana;
+          const file = input.files[0];
+          if (!file) return;
+          datos[curso].semanas[semana].entregas.push({
+            tipo: "archivo",
+            valor: file.name + " (" + Math.round(file.size / 1024) + " KB)",
+          });
+          guardarDatos(datos);
+          const cursoActivo = document.querySelector(".course-body.active").id.replace("body-", "");
+          mostrarCurso(cursoActivo);
+        });
+      });
+
+      // Quitar entrega
+      document.querySelectorAll(".entry-remove").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const curso = btn.dataset.curso;
+          const semana = btn.dataset.semana;
+          const idx = Number(btn.dataset.idx);
+          datos[curso].semanas[semana].entregas.splice(idx, 1);
+          guardarDatos(datos);
+          const cursoActivo = document.querySelector(".course-body.active").id.replace("body-", "");
+          mostrarCurso(cursoActivo);
+        });
+      });
+    }
+
+    mostrarCurso(CURSOS[0].id);
+  </script>
+</body>
+</html>

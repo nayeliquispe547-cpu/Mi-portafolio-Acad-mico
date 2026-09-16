@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Iniciar sesión — Portafolio Académico</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <img class="logo" src="assets/logo-universidad.png" alt="Logo de la universidad" />
+      <h1>Portafolio Académico</h1>
+      <p class="login-sub" id="subtitulo">Inicia sesión para continuar</p>
+
+      <form id="form-login" autocomplete="off">
+        <div class="field">
+          <label for="usuario">Usuario</label>
+          <input type="text" id="usuario" name="usuario" required />
+        </div>
+        <div class="field">
+          <label for="clave">Contraseña</label>
+          <input type="password" id="clave" name="clave" required />
+        </div>
+        <p class="login-error" id="error-login"></p>
+        <button type="submit" class="btn">Ingresar</button>
+      </form>
+
+      <p class="login-hint">
+        Este acceso es solo para uso personal del portafolio: los datos no se
+        envían a ningún servidor, se validan en tu propio navegador.
+        Cambia el usuario y la contraseña en <code>script.js</code>.
+      </p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    document.getElementById("subtitulo").textContent =
+      "Portafolio de " + CONFIG.nombreEstudiante + " — " + CONFIG.universidad;
+
+    if (estaLogueado()) {
+      window.location.href = "portafolio.html";
+    }
+
+    document.getElementById("form-login").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const usuario = document.getElementById("usuario").value.trim();
+      const clave = document.getElementById("clave").value;
+      const error = document.getElementById("error-login");
+
+      if (usuario === CONFIG.usuario && clave === CONFIG.clave) {
+        sessionStorage.setItem("portafolio_sesion", "activa");
+        window.location.href = "portafolio.html";
+      } else {
+        error.textContent = "Usuario o contraseña incorrectos.";
+      }
+    });
+  </script>
+</body>
+</html>
