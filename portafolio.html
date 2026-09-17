@@ -19,7 +19,6 @@
         <strong id="nombre-estudiante">Estudiante</strong>
         <span id="codigo-estudiante">Código</span>
       </div>
-      <button class="logout-btn" id="btn-logout">Cerrar sesión</button>
     </div>
   </header>
 
@@ -40,16 +39,12 @@
   <footer class="note">
     Los enlaces son la forma recomendada de entregar carpetas o repositorios completos
     (por ejemplo, un enlace a tu repositorio de GitHub). Los documentos o archivos zip
-    que adjuntes aquí se recuerdan solo en este navegador mientras dure la sesión; para
-    que tu entrega quede permanente, sube el archivo a tu repositorio de GitHub y pega
-    aquí el enlace.
+    que adjuntes aquí se recuerdan en tu navegador local.
   </footer>
 
   <script src="script.js"></script>
   <script>
-    protegerPagina();
-
-    // Encabezado con datos de configuración
+    // Configuración visual del encabezado y hero
     document.getElementById("titulo-universidad").textContent = "Portafolio Académico";
     document.getElementById("subtitulo-universidad").textContent = CONFIG.universidad;
     document.getElementById("nombre-estudiante").textContent = CONFIG.nombreEstudiante;
@@ -60,8 +55,6 @@
     document.getElementById("hero-nombre").textContent = CONFIG.nombreEstudiante;
     document.getElementById("hero-codigo").textContent = CONFIG.codigoEstudiante;
     document.getElementById("hero-universidad").textContent = CONFIG.universidad;
-
-    document.getElementById("btn-logout").addEventListener("click", cerrarSesion);
 
     let datos = cargarDatos();
     let panelesAbiertos = {};
@@ -175,7 +168,6 @@
     }
 
     function adjuntarEventos() {
-      // Mostrar / ocultar panel de entrega
       document.querySelectorAll(".toggle-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           const key = btn.dataset.key;
@@ -189,7 +181,6 @@
         });
       });
 
-      // Editar tema de la semana
       document.querySelectorAll(".week-tema").forEach((el) => {
         el.addEventListener("blur", () => {
           const curso = el.dataset.curso;
@@ -202,7 +193,6 @@
         });
       });
 
-      // Añadir enlace
       document.querySelectorAll(".btn-agregar-enlace").forEach((btn) => {
         btn.addEventListener("click", () => {
           const curso = btn.dataset.curso;
@@ -219,7 +209,6 @@
         });
       });
 
-      // Adjuntar archivo (nombre + enlace temporal de descarga en este navegador)
       document.querySelectorAll(".btn-elegir-archivo").forEach((btn) => {
         btn.addEventListener("click", () => {
           const curso = btn.dataset.curso;
@@ -246,7 +235,6 @@
         });
       });
 
-      // Quitar entrega
       document.querySelectorAll(".entry-remove").forEach((btn) => {
         btn.addEventListener("click", () => {
           const curso = btn.dataset.curso;
