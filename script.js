@@ -83,10 +83,22 @@ function cargarDatos() {
 function guardarDatos(datos) {
   try {
     const datosLigeros = JSON.parse(JSON.stringify(datos));
+    // Limpiamos URLs de objetos locales para que no ocupen espacio innecesario en JSON
+    for (let cursoId in datosLigeros) {
+      for (let semanaId in datosLigeros[cursoId].semanas) {
+        let entregas = datosLigeros[cursoId].semanas[semanaId].entregas;
+        entregas.forEach(item => {
+          if (item.dataUrl && item.dataUrl.startsWith("blob:")) {
+            item.dataUrl = "[Archivo local temporal]";
+            item.blobUrl = "[Archivo local temporal]";
+            item.urlPublica = "[Archivo local temporal]";
+          }
+        });
+      }
+    }
     localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
   } catch (error) {
     console.error("No se pudo guardar en localStorage:", error);
-    alert("El almacenamiento local está lleno. Intenta borrar algunas evidencias pesadas.");
   }
 }
 
@@ -130,29 +142,21 @@ function comprimirImagen(file, maxWidth = 1000, quality = 0.7) {
 
 async function crearEntregaDesdeArchivo(file) {
   try {
-    let resultadoUrl = "";
-
-    // Si es imagen, la comprimimos automáticamente para ahorrar espacio
-    if (file.type && file.type.startsWith("image/")) {
-      const imagenComprimida = await comprimirImagen(file);
-      resultadoUrl = imagenComprimida || (await leerArchivoComoDataUrl(file));
-    } else {
-      // Si es PDF, Word u otro archivo, lo leemos directamente
-      resultadoUrl = await leerArchivoComoDataUrl(file);
-    }
+    // Creamos un enlace Blob local súper rápido y 100% libre de errores de red
+    const urlLocal = URL.createObjectURL(file);
 
     return {
       tipo: "archivo",
       nombre: file.name,
       tipoMime: file.type || "application/octet-stream",
       tamanio: Math.round(file.size / 1024) + " KB",
-      dataUrl: resultadoUrl,
-      blobUrl: resultadoUrl,
-      urlPublica: resultadoUrl
+      dataUrl: urlLocal,
+      blobUrl: urlLocal,
+      urlPublica: urlLocal
     };
   } catch (error) {
-    console.error("Error al procesar el archivo:", error);
-    alert("Hubo un error al procesar el archivo: " + error.message);
+    console.error("Error al procesar el archivo local:", error);
+    alert("Hubo un error al adjuntar el archivo: " + error.message);
     throw error;
   }
 }
