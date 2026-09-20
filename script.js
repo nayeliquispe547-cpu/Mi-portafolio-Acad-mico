@@ -148,26 +148,61 @@ function comprimirImagen(file, maxWidth = 1000, quality = 0.7) {
 }
 
 async function crearEntregaDesdeArchivo(file) {
-  try {
-    // Creamos un enlace Blob local súper rápido y 100% libre de errores de red
-    const urlLocal = URL.createObjectURL(file);
+  const clienteSupabase = getSupabaseClient();
 
-    return {
-      tipo: "archivo",
-      nombre: file.name,
-      tipoMime: file.type || "application/octet-stream",
-      tamanio: Math.round(file.size / 1024) + " KB",
-      dataUrl: urlLocal,
-      blobUrl: urlLocal,
-      urlPublica: urlLocal
-    };
-  } catch (error) {
-    console.error("Error al procesar el archivo local:", error);
-    alert("Hubo un error al adjuntar el archivo: " + error.message);
-    throw error;
+  if (clienteSupabase) {
+    try {
+      const nombreSeguro = (file.name || "archivo").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_.-]/g, "_");
+      const ruta = `${Date.now()}-${nombreSeguro}`;
+      const bucket = CONFIG.supabaseBucket || "portafolio-evidencias";
+      const { data, error } = await clienteSupabase.storage
+        .from(bucket)
+        .upload(ruta, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type || "application/octet-stream"
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      const { data: publicUrlData } = clienteSupabase.storage.from(bucket).getPublicUrl(data.path);
+
+      return {
+        tipo: "archivo",
+        nombre: file.name,
+        tipoMime: file.type,
+        tamanio: Math.round(file.size / 1024) + " KB",
+        dataUrl: publicUrlData.publicUrl,
+        blobUrl: publicUrlData.publicUrl,
+        urlPublica: publicUrlData.publicUrl
+      };
+    } catch (error) {
+      console.warn("Fallo al subir a Supabase; se usará respaldo local:", error);
+    }
   }
-}
 
+  let dataUrl = null;
+  if (file.type.startsWith("image/")) {
+    dataUrl = await comprimirImagen(file);
+  }
+  if (!dataUrl) {
+    dataUrl = await leerArchivoComoDataUrl(file);
+  }
+
+  const blobUrl = typeof URL !== "undefined" && URL.createObjectURL ? URL.createObjectURL(file) : dataUrl;
+
+  return {
+    tipo: "archivo",
+    nombre: file.name,
+    tipoMime: file.type,
+    tamanio: Math.round(file.size / 1024) + " KB",
+    dataUrl: dataUrl,
+    blobUrl: blobUrl,
+    urlPublica: dataUrl
+  };
+}
 // Temas oficiales del sílabo UPLA - Desarrollo de Aplicaciones I
 const TEMAS_INICIALES_TALLER = {
   1: "Inicialización del Proyecto y Ventanas Principales (JFrame)",
