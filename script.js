@@ -1,4 +1,4 @@
-ESTO ES MI SCRIPT const CONFIG = {
+const CONFIG = {
   nombreEstudiante: "Nayeli Quispe Tica",
   codigoEstudiante: "U00057H",
   universidad: "Universidad Peruana Los Andes",
