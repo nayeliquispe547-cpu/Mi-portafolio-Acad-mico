@@ -43,14 +43,37 @@ const TEMAS_INICIALES_ALGORITMO = {
   16: "Exposición de trabajo final y evaluación de desempeño final"
 };
 
+// Temas oficiales del sílabo UPLA - Desarrollo de Aplicaciones I (Taller de Apps)
+const TEMAS_INICIALES_TALLER = {
+  1: "Inicialización del Proyecto y Ventanas Principales (JFrame)",
+  2: "Organización del Espacio con Contenedores (JPanel, JScrollPane)",
+  3: "Implementación de Menús de Navegación (JMenuBar, JMenu, JMenuItem)",
+  4: "Integración de Componentes Básicos y Validación Visual",
+  5: "Gestión de Archivos y Persistencia de Datos Locales (JFileChooser)",
+  6: "Personalización Visual Avanzada e Identidad del Proyecto (Look and Feel)",
+  7: "Diseño de Interfaces Complejas con Tablas y Listas (JTable, JList, JComboBox)",
+  8: "Orquestación de Mensajes, Diálogos de Usuario y Cierre de Fase (JOptionPane)",
+  9: "Conectividad y Configuración del Driver de Base de Datos (JDBC)",
+  10: "Operaciones de Persistencia: Inserción y Lectura de Datos (CRUD: Insert/Select)",
+  11: "Operaciones de Persistencia II: Actualización, Eliminación y Transacciones",
+  12: "Vinculación Dinámica y Cierre de la Capa de Datos",
+  13: "Migración a Arquitectura Cliente-Servidor e Hilos",
+  14: "Depuración, Manejo de Excepciones y Pruebas del Sistema",
+  15: "Compilación y Generación del Archivo Ejecutable (.jar)",
+  16: "Sustentación del Proyecto Final y Cierre de Curso"
+};
+
 function cargarDatos() {
-  const claves = ["portafolio_datos_v10", "portafolio_datos_v9", "portafolio_datos_v8"];
+  const claves = ["portafolio_datos_v11", "portafolio_datos_v10", "portafolio_datos_v9", "portafolio_datos_v8"];
 
   for (const clave of claves) {
     const guardado = localStorage.getItem(clave);
     if (guardado) {
       try {
-        return JSON.parse(guardado);
+        const parsed = JSON.parse(guardado);
+        if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
+          return parsed;
+        }
       } catch (e) {
         console.warn("Datos guardados inválidos en", clave, e);
       }
@@ -83,29 +106,9 @@ function cargarDatos() {
 function guardarDatos(datos) {
   try {
     const datosLigeros = JSON.parse(JSON.stringify(datos));
-    // Guardamos solo la estructura esencial de texto y temas, omitiendo archivos pesados del caché local
-    for (let cursoId in datosLigeros) {
-      for (let semanaId in datosLigeros[cursoId].semanas) {
-        let entregas = datosLigeros[cursoId].semanas[semanaId].entregas;
-        entregas.forEach(item => {
-          if (item.dataUrl && item.dataUrl.startsWith("blob:")) {
-            item.dataUrl = "";
-            item.blobUrl = "";
-            item.urlPublica = "";
-          }
-        });
-      }
-    }
-    localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
+    localStorage.setItem("portafolio_datos_v11", JSON.stringify(datosLigeros));
   } catch (error) {
-    // Si se vuelve a llenar, lo silenciamo para que NUNCA vuelva a aparecer la molesta alerta
-    console.warn("Aviso de almacenamiento omitido:", error);
-  }
-}
-        
-    localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
-  } catch (error) {
-    console.error("No se pudo guardar en localStorage:", error);
+    console.warn("Almacenamiento local al límite:", error);
   }
 }
 
@@ -118,7 +121,7 @@ function leerArchivoComoDataUrl(file) {
   });
 }
 
-function comprimirImagen(file, maxWidth = 1000, quality = 0.7) {
+function comprimirImagen(file, maxWidth = 1200, quality = 0.75) {
   if (!file || !file.type || !file.type.startsWith("image/")) {
     return Promise.resolve(null);
   }
@@ -149,99 +152,62 @@ function comprimirImagen(file, maxWidth = 1000, quality = 0.7) {
 
 async function crearEntregaDesdeArchivo(file) {
   try {
-    // Creamos un enlace Blob local súper rápido y 100% libre de errores de red
-    const urlLocal = URL.createObjectURL(file);
+    let resultadoUrl = "";
+
+    if (file.type && file.type.startsWith("image/")) {
+      const imagenComprimida = await comprimirImagen(file);
+      resultadoUrl = imagenComprimida || (await leerArchivoComoDataUrl(file));
+    } else {
+      resultadoUrl = await leerArchivoComoDataUrl(file);
+    }
 
     return {
       tipo: "archivo",
       nombre: file.name,
       tipoMime: file.type || "application/octet-stream",
       tamanio: Math.round(file.size / 1024) + " KB",
-      dataUrl: urlLocal,
-      blobUrl: urlLocal,
-      urlPublica: urlLocal
+      dataUrl: resultadoUrl,
+      blobUrl: resultadoUrl,
+      urlPublica: resultadoUrl
     };
   } catch (error) {
-    console.error("Error al procesar el archivo local:", error);
-    alert("Hubo un error al adjuntar el archivo: " + error.message);
+    console.error("Error al procesar la imagen:", error);
+    alert("Hubo un error al adjuntar la imagen: " + error.message);
     throw error;
   }
 }
 
-async function crearEntregaDesdeArchivo(file) {
-  const clienteSupabase = getSupabaseClient();
-
-  if (clienteSupabase) {
-    try {
-      const nombreSeguro = (file.name || "archivo").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_.-]/g, "_");
-      const ruta = `${Date.now()}-${nombreSeguro}`;
-      const bucket = CONFIG.supabaseBucket || "portafolio-evidencias";
-      const { data, error } = await clienteSupabase.storage
-        .from(bucket)
-        .upload(ruta, file, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: file.type || "application/octet-stream"
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      const { data: publicUrlData } = clienteSupabase.storage.from(bucket).getPublicUrl(data.path);
-
-      return {
-        tipo: "archivo",
-        nombre: file.name,
-        tipoMime: file.type,
-        tamanio: Math.round(file.size / 1024) + " KB",
-        dataUrl: publicUrlData.publicUrl,
-        blobUrl: publicUrlData.publicUrl,
-        urlPublica: publicUrlData.publicUrl
-      };
-    } catch (error) {
-      console.warn("Fallo al subir a Supabase; se usará respaldo local:", error);
-    }
+// Función global optimizada para abrir imágenes limpiamente al hacer clic en "Ver"
+window.abrirEvidencia = function(url, nombre) {
+  if (!url) {
+    alert("No hay imagen disponible para mostrar.");
+    return;
   }
-
-  let dataUrl = null;
-  if (file.type.startsWith("image/")) {
-    dataUrl = await comprimirImagen(file);
+  
+  const ventana = window.open();
+  if (ventana) {
+    ventana.document.write(`
+      <html>
+        <head><title>Imagen: ${nombre || 'Evidencia'}</title></head>
+        <body style="margin:0; background:#0f172a; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; font-family:sans-serif;">
+          <div style="position:fixed; top:0; left:0; width:100%; background:#1e293b; color:#fff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; box-sizing:border-box; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index:10;">
+            <span style="font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;">${nombre || 'Captura de evidencia'}</span>
+            <a href="${url}" download="${nombre || 'imagen.jpg'}" style="background:#2563eb; color:#fff; padding:8px 16px; text-decoration:none; border-radius:6px; font-size:14px; font-weight:600;">Descargar Imagen</a>
+          </div>
+          <div style="margin-top:70px; padding:20px; text-align:center; max-width:100%;">
+            <img src="${url}" style="max-width:90vw; max-height:82vh; border-radius:8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); object-fit:contain;" />
+          </div>
+        </body>
+      </html>
+    `);
+    ventana.document.close();
+  } else {
+    // Si el navegador bloquea la pestaña emergente, se descarga directamente
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = nombre || "imagen.jpg";
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
   }
-  if (!dataUrl) {
-    dataUrl = await leerArchivoComoDataUrl(file);
-  }
-
-  const blobUrl = typeof URL !== "undefined" && URL.createObjectURL ? URL.createObjectURL(file) : dataUrl;
-
-  return {
-    tipo: "archivo",
-    nombre: file.name,
-    tipoMime: file.type,
-    tamanio: Math.round(file.size / 1024) + " KB",
-    dataUrl: dataUrl,
-    blobUrl: blobUrl,
-    urlPublica: dataUrl
-  };
-}
-
-
-// Temas oficiales del sílabo UPLA - Desarrollo de Aplicaciones I
-const TEMAS_INICIALES_TALLER = {
-  1: "Inicialización del Proyecto y Ventanas Principales (JFrame)",
-  2: "Organización del Espacio con Contenedores (JPanel, JScrollPane)",
-  3: "Implementación de Menús de Navegación (JMenuBar, JMenu, JMenuItem)",
-  4: "Integración de Componentes Básicos y Validación Visual",
-  5: "Gestión de Archivos y Persistencia de Datos Locales (JFileChooser)",
-  6: "Personalización Visual Avanzada e Identidad del Proyecto (Look and Feel)",
-  7: "Diseño de Interfaces Complejas con Tablas y Listas (JTable, JList, JComboBox)",
-  8: "Orquestación de Mensajes, Diálogos de Usuario y Cierre de Fase (JOptionPane)",
-  9: "Conectividad y Configuración del Driver de Base de Datos (JDBC)",
-  10: "Operaciones de Persistencia: Inserción y Lectura de Datos (CRUD: Insert/Select)",
-  11: "Operaciones de Persistencia II: Actualización, Eliminación y Transacciones",
-  12: "Vinculación Dinámica y Cierre de la Capa de Datos",
-  13: "Migración a Arquitectura Cliente-Servidor e Hilos",
-  14: "Depuración, Manejo de Excepciones y Pruebas del Sistema",
-  15: "Compilación y Generación del Archivo Ejecutable (.jar)",
-  16: "Sustentación del Proyecto Final y Cierre de Curso"
 };
