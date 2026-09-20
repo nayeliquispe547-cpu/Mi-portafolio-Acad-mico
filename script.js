@@ -2,8 +2,8 @@ const CONFIG = {
   nombreEstudiante: "Nayeli Quispe Tica",
   codigoEstudiante: "U00057H",
   universidad: "Universidad Peruana Los Andes",
-  supabaseUrl: "https://oxskwanusgxkawygmwr.supabase.co",
-  supabaseAnonKey: "sb_publishable_T2rEz5dfO53oVe2yXMFfCA_qTNuieYW",
+  supabaseUrl:"https://jgmlreyazbiimdpspsn.supabase.co",
+  supabaseAnonKey:"sb_publishable_T2rEz5dfO53oVe2yXMFfCA_qTNuieYW",
   supabaseBucket: "portafolio-evidencias"
 };
 
