@@ -43,20 +43,44 @@ const TEMAS_INICIALES_ALGORITMO = {
   16: "Exposición de trabajo final y evaluación de desempeño final"
 };
 
+// Temas oficiales del sílabo UPLA - Desarrollo de Aplicaciones I (Taller de Apps)
+const TEMAS_INICIALES_TALLER = {
+  1: "Inicialización del Proyecto y Ventanas Principales (JFrame)",
+  2: "Organización del Espacio con Contenedores (JPanel, JScrollPane)",
+  3: "Implementación de Menús de Navegación (JMenuBar, JMenu, JMenuItem)",
+  4: "Integración de Componentes Básicos y Validación Visual",
+  5: "Gestión de Archivos y Persistencia de Datos Locales (JFileChooser)",
+  6: "Personalización Visual Avanzada e Identidad del Proyecto (Look and Feel)",
+  7: "Diseño de Interfaces Complejas con Tablas y Listas (JTable, JList, JComboBox)",
+  8: "Orquestación de Mensajes, Diálogos de Usuario y Cierre de Fase (JOptionPane)",
+  9: "Conectividad y Configuración del Driver de Base de Datos (JDBC)",
+  10: "Operaciones de Persistencia: Inserción y Lectura de Datos (CRUD: Insert/Select)",
+  11: "Operaciones de Persistencia II: Actualización, Eliminación y Transacciones",
+  12: "Vinculación Dinámica y Cierre de la Capa de Datos",
+  13: "Migración a Arquitectura Cliente-Servidor e Hilos",
+  14: "Depuración, Manejo de Excepciones y Pruebas del Sistema",
+  15: "Compilación y Generación del Archivo Ejecutable (.jar)",
+  16: "Sustentación del Proyecto Final y Cierre de Curso"
+};
+
 function cargarDatos() {
-  const claves = ["portafolio_datos_v10", "portafolio_datos_v9", "portafolio_datos_v8"];
+  const claves = ["portafolio_datos_v11", "portafolio_datos_v10", "portafolio_datos_v9", "portafolio_datos_v8"];
 
   for (const clave of claves) {
     const guardado = localStorage.getItem(clave);
     if (guardado) {
       try {
-        return JSON.parse(guardado);
+        const parsed = JSON.parse(guardado);
+        if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
+          return parsed;
+        }
       } catch (e) {
         console.warn("Datos guardados inválidos en", clave, e);
       }
     }
   }
 
+  // Si no encuentra nada válido en ninguna versión, genera la estructura inicial limpia para los cursos
   let datosIniciales = {};
   CURSOS.forEach(curso => {
     datosIniciales[curso.id] = { semanas: {} };
@@ -83,29 +107,9 @@ function cargarDatos() {
 function guardarDatos(datos) {
   try {
     const datosLigeros = JSON.parse(JSON.stringify(datos));
-    // Guardamos solo la estructura esencial de texto y temas, omitiendo archivos pesados del caché local
-    for (let cursoId in datosLigeros) {
-      for (let semanaId in datosLigeros[cursoId].semanas) {
-        let entregas = datosLigeros[cursoId].semanas[semanaId].entregas;
-        entregas.forEach(item => {
-          if (item.dataUrl && item.dataUrl.startsWith("blob:")) {
-            item.dataUrl = "";
-            item.blobUrl = "";
-            item.urlPublica = "";
-          }
-        });
-      }
-    }
-    localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
+    localStorage.setItem("portafolio_datos_v11", JSON.stringify(datosLigeros));
   } catch (error) {
-    // Si se vuelve a llenar, lo silenciamo para que NUNCA vuelva a aparecer la molesta alerta
-    console.warn("Aviso de almacenamiento omitido:", error);
-  }
-}
-        
-    localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
-  } catch (error) {
-    console.error("No se pudo guardar en localStorage:", error);
+    console.warn("Almacenamiento local al límite, omitiendo aviso:", error);
   }
 }
 
@@ -146,20 +150,18 @@ function comprimirImagen(file, maxWidth = 1000, quality = 0.7) {
     reader.readAsDataURL(file);
   });
 }
+
 async function crearEntregaDesdeArchivo(file) {
   try {
     let resultadoUrl = "";
 
-    // Si es una imagen, la comprimimos inteligentemente para que no sature el navegador
     if (file.type && file.type.startsWith("image/")) {
       const imagenComprimida = await comprimirImagen(file);
       resultadoUrl = imagenComprimida || (await leerArchivoComoDataUrl(file));
     } else {
-      // Si es un PDF, Word u otro tipo de documento, lo convertimos a DataURL permanente
       resultadoUrl = await leerArchivoComoDataUrl(file);
     }
 
-    // Retorna el objeto listo para que el botón "Ver" lo abra sin que caduque el enlace
     return {
       tipo: "archivo",
       nombre: file.name,
@@ -175,32 +177,3 @@ async function crearEntregaDesdeArchivo(file) {
     throw error;
   }
 }
-
-// Función auxiliar encargada de transformar el archivo a Base64 permanente para el botón "Ver"
-function leerArchivoComoDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => resolve(event.target.result);
-    reader.onerror = () => reject(new Error("No se pudo leer el archivo."));
-    reader.readAsDataURL(file);
-  });
-}
-// Temas oficiales del sílabo UPLA - Desarrollo de Aplicaciones I
-const TEMAS_INICIALES_TALLER = {
-  1: "Inicialización del Proyecto y Ventanas Principales (JFrame)",
-  2: "Organización del Espacio con Contenedores (JPanel, JScrollPane)",
-  3: "Implementación de Menús de Navegación (JMenuBar, JMenu, JMenuItem)",
-  4: "Integración de Componentes Básicos y Validación Visual",
-  5: "Gestión de Archivos y Persistencia de Datos Locales (JFileChooser)",
-  6: "Personalización Visual Avanzada e Identidad del Proyecto (Look and Feel)",
-  7: "Diseño de Interfaces Complejas con Tablas y Listas (JTable, JList, JComboBox)",
-  8: "Orquestación de Mensajes, Diálogos de Usuario y Cierre de Fase (JOptionPane)",
-  9: "Conectividad y Configuración del Driver de Base de Datos (JDBC)",
-  10: "Operaciones de Persistencia: Inserción y Lectura de Datos (CRUD: Insert/Select)",
-  11: "Operaciones de Persistencia II: Actualización, Eliminación y Transacciones",
-  12: "Vinculación Dinámica y Cierre de la Capa de Datos",
-  13: "Migración a Arquitectura Cliente-Servidor e Hilos",
-  14: "Depuración, Manejo de Excepciones y Pruebas del Sistema",
-  15: "Compilación y Generación del Archivo Ejecutable (.jar)",
-  16: "Sustentación del Proyecto Final y Cierre de Curso"
-};
