@@ -171,41 +171,48 @@ async function crearEntregaDesdeArchivo(file) {
       urlPublica: resultadoUrl
     };
   } catch (error) {
-    console.error("Error al procesar la imagen:", error);
-    alert("Hubo un error al adjuntar la imagen: " + error.message);
+    console.error("Error al procesar el archivo:", error);
+    alert("Hubo un error al adjuntar el archivo: " + error.message);
     throw error;
   }
 }
 
-// Función global optimizada para abrir imágenes limpiamente al hacer clic en "Ver"
+// Función global corregida para visualizar tanto imágenes como documentos correctamente al hacer clic en "Ver"
 window.abrirEvidencia = function(url, nombre) {
   if (!url) {
-    alert("No hay imagen disponible para mostrar.");
+    alert("No hay archivo disponible para mostrar.");
     return;
   }
   
   const ventana = window.open();
   if (ventana) {
+    let contenidoVisual = "";
+    
+    if (url.startsWith("data:image/") || url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      contenidoVisual = `<img src="${url}" style="max-width:90vw; max-height:82vh; border-radius:8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); object-fit:contain;" />`;
+    } else {
+      contenidoVisual = `<iframe src="${url}" style="width:100%; height:82vh; border:none; background:#fff; border-radius:8px;"></iframe>`;
+    }
+
     ventana.document.write(`
       <html>
-        <head><title>Imagen: ${nombre || 'Evidencia'}</title></head>
+        <head><title>Visualizar: ${nombre || 'Evidencia'}</title></head>
         <body style="margin:0; background:#0f172a; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; font-family:sans-serif;">
           <div style="position:fixed; top:0; left:0; width:100%; background:#1e293b; color:#fff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; box-sizing:border-box; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index:10;">
-            <span style="font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;">${nombre || 'Captura de evidencia'}</span>
-            <a href="${url}" download="${nombre || 'imagen.jpg'}" style="background:#2563eb; color:#fff; padding:8px 16px; text-decoration:none; border-radius:6px; font-size:14px; font-weight:600;">Descargar Imagen</a>
+            <span style="font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;">${nombre || 'Archivo adjunto'}</span>
+            <a href="${url}" download="${nombre || 'archivo'}" style="background:#2563eb; color:#fff; padding:8px 16px; text-decoration:none; border-radius:6px; font-size:14px; font-weight:600;">Descargar Archivo</a>
           </div>
           <div style="margin-top:70px; padding:20px; text-align:center; max-width:100%;">
-            <img src="${url}" style="max-width:90vw; max-height:82vh; border-radius:8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); object-fit:contain;" />
+            ${contenidoVisual}
           </div>
         </body>
       </html>
     `);
     ventana.document.close();
   } else {
-    // Si el navegador bloquea la pestaña emergente, se descarga directamente
     const enlace = document.createElement("a");
     enlace.href = url;
-    enlace.download = nombre || "imagen.jpg";
+    enlace.download = nombre || "archivo";
     document.body.appendChild(enlace);
     enlace.click();
     document.body.removeChild(enlace);
