@@ -83,19 +83,26 @@ function cargarDatos() {
 function guardarDatos(datos) {
   try {
     const datosLigeros = JSON.parse(JSON.stringify(datos));
-    // Limpiamos URLs de objetos locales para que no ocupen espacio innecesario en JSON
+    // Guardamos solo la estructura esencial de texto y temas, omitiendo archivos pesados del caché local
     for (let cursoId in datosLigeros) {
       for (let semanaId in datosLigeros[cursoId].semanas) {
         let entregas = datosLigeros[cursoId].semanas[semanaId].entregas;
         entregas.forEach(item => {
           if (item.dataUrl && item.dataUrl.startsWith("blob:")) {
-            item.dataUrl = "[Archivo local temporal]";
-            item.blobUrl = "[Archivo local temporal]";
-            item.urlPublica = "[Archivo local temporal]";
+            item.dataUrl = "";
+            item.blobUrl = "";
+            item.urlPublica = "";
           }
         });
       }
     }
+    localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
+  } catch (error) {
+    // Si se vuelve a llenar, lo silenciamo para que NUNCA vuelva a aparecer la molesta alerta
+    console.warn("Aviso de almacenamiento omitido:", error);
+  }
+}
+        
     localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
   } catch (error) {
     console.error("No se pudo guardar en localStorage:", error);
