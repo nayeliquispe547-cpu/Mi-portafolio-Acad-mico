@@ -82,22 +82,11 @@ function cargarDatos() {
 
 function guardarDatos(datos) {
   try {
-    // Creamos una copia ligera para limpiar cadenas base64 gigantes y evitar saturar localStorage
     const datosLigeros = JSON.parse(JSON.stringify(datos));
-    for (let cursoId in datosLigeros) {
-      for (let semanaId in datosLigeros[cursoId].semanas) {
-        let entregas = datosLigeros[cursoId].semanas[semanaId].entregas;
-        entregas.forEach(item => {
-          if (item.dataUrl && item.dataUrl.startsWith("data:image")) {
-            item.dataUrl = item.urlPublica || "[Archivo en la nube]";
-          }
-        });
-      }
-    }
     localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
   } catch (error) {
     console.error("No se pudo guardar en localStorage:", error);
-    alert("El navegador se quedó sin espacio local para caché, pero tus datos principales están seguros.");
+    alert("El almacenamiento local está lleno. Intenta borrar algunas evidencias pesadas.");
   }
 }
 
@@ -110,7 +99,7 @@ function leerArchivoComoDataUrl(file) {
   });
 }
 
-function comprimirImagen(file, maxWidth = 1400, quality = 0.72) {
+function comprimirImagen(file, maxWidth = 1000, quality = 0.7) {
   if (!file || !file.type || !file.type.startsWith("image/")) {
     return Promise.resolve(null);
   }
@@ -141,34 +130,29 @@ function comprimirImagen(file, maxWidth = 1400, quality = 0.72) {
 
 async function crearEntregaDesdeArchivo(file) {
   try {
-    const formData = new FormData();
-    formData.append("reqtype", "fileupload");
-    formData.append("fileToUp", file);
+    let resultadoUrl = "";
 
-    const response = await fetch("https://catbox.moe/user/api.php", {
-      method: "POST",
-      body: formData
-    });
-
-    if (!response.ok) {
-      throw new Error("Error en la red al subir el archivo.");
+    // Si es imagen, la comprimimos automáticamente para ahorrar espacio
+    if (file.type && file.type.startsWith("image/")) {
+      const imagenComprimida = await comprimirImagen(file);
+      resultadoUrl = imagenComprimida || (await leerArchivoComoDataUrl(file));
+    } else {
+      // Si es PDF, Word u otro archivo, lo leemos directamente
+      resultadoUrl = await leerArchivoComoDataUrl(file);
     }
-
-    const urlPublica = await response.text();
-    const linkLimpio = urlPublica.trim();
 
     return {
       tipo: "archivo",
       nombre: file.name,
-      tipoMime: file.type,
+      tipoMime: file.type || "application/octet-stream",
       tamanio: Math.round(file.size / 1024) + " KB",
-      dataUrl: linkLimpio,
-      blobUrl: linkLimpio,
-      urlPublica: linkLimpio
+      dataUrl: resultadoUrl,
+      blobUrl: resultadoUrl,
+      urlPublica: resultadoUrl
     };
   } catch (error) {
-    console.error("Error al subir archivo a Catbox:", error);
-    alert("Hubo un error al subir el archivo: " + error.message);
+    console.error("Error al procesar el archivo:", error);
+    alert("Hubo un error al procesar el archivo: " + error.message);
     throw error;
   }
 }
