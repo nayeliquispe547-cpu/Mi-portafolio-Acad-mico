@@ -93,11 +93,22 @@ function cargarDatos() {
 
 function guardarDatos(datos) {
   try {
-    localStorage.setItem("portafolio_datos_v10", JSON.stringify(datos));
+    // Creamos una copia ligera para limpiar cadenas base64 gigantes y evitar saturar localStorage
+    const datosLigeros = JSON.parse(JSON.stringify(datos));
+    for (let cursoId in datosLigeros) {
+      for (let semanaId in datosLigeros[cursoId].semanas) {
+        let entregas = datosLigeros[cursoId].semanas[semanaId].entregas;
+        entregas.forEach(item => {
+          if (item.dataUrl && item.dataUrl.startsWith("data:image")) {
+            item.dataUrl = item.urlPublica || "[Archivo en la nube]";
+          }
+        });
+      }
+    }
+    localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
   } catch (error) {
     console.error("No se pudo guardar en localStorage:", error);
-    alert("El navegador no pudo guardar todas las imágenes. Prueba con menos fotos o imágenes más pequeñas.");
-    throw error;
+    alert("El navegador se quedó sin espacio local para caché, pero tus datos principales están seguros.");
   }
 }
 
@@ -142,58 +153,43 @@ function comprimirImagen(file, maxWidth = 1400, quality = 0.72) {
 async function crearEntregaDesdeArchivo(file) {
   const clienteSupabase = getSupabaseClient();
 
-  if (clienteSupabase) {
-    try {
-      const nombreSeguro = (file.name || "archivo").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_.-]/g, "_");
-      const ruta = `${Date.now()}-${nombreSeguro}`;
-      const bucket = CONFIG.supabaseBucket || "portafolio-evidencias";
-      const { data, error } = await clienteSupabase.storage
-        .from(bucket)
-        .upload(ruta, file, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: file.type || "application/octet-stream"
-        });
+  if (!clienteSupabase) {
+    throw new Error("No se pudo conectar a Supabase. Configura tus credenciales correctamente.");
+  }
 
-      if (error) {
-        throw error;
-      }
+  try {
+    const nombreSeguro = (file.name || "archivo").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_.-]/g, "_");
+    const ruta = `${Date.now()}-${nombreSeguro}`;
+    const bucket = CONFIG.supabaseBucket || "portafolio-evidencias";
+    
+    const { data, error } = await clienteSupabase.storage
+      .from(bucket)
+      .upload(ruta, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || "application/octet-stream"
+      });
 
-      const { data: publicUrlData } = clienteSupabase.storage.from(bucket).getPublicUrl(data.path);
-
-      return {
-        tipo: "archivo",
-        nombre: file.name,
-        tipoMime: file.type,
-        tamanio: Math.round(file.size / 1024) + " KB",
-        dataUrl: publicUrlData.publicUrl,
-        blobUrl: publicUrlData.publicUrl,
-        urlPublica: publicUrlData.publicUrl
-      };
-    } catch (error) {
-      console.warn("Fallo al subir a Supabase; se usará respaldo local:", error);
+    if (error) {
+      throw error;
     }
-  }
 
-  let dataUrl = null;
-  if (file.type.startsWith("image/")) {
-    dataUrl = await comprimirImagen(file);
-  }
-  if (!dataUrl) {
-    dataUrl = await leerArchivoComoDataUrl(file);
-  }
+    const { data: publicUrlData } = clienteSupabase.storage.from(bucket).getPublicUrl(data.path);
 
-  const blobUrl = typeof URL !== "undefined" && URL.createObjectURL ? URL.createObjectURL(file) : dataUrl;
-
-  return {
-    tipo: "archivo",
-    nombre: file.name,
-    tipoMime: file.type,
-    tamanio: Math.round(file.size / 1024) + " KB",
-    dataUrl: dataUrl,
-    blobUrl: blobUrl,
-    urlPublica: dataUrl
-  };
+    return {
+      tipo: "archivo",
+      nombre: file.name,
+      tipoMime: file.type,
+      tamanio: Math.round(file.size / 1024) + " KB",
+      dataUrl: publicUrlData.publicUrl,
+      blobUrl: publicUrlData.publicUrl,
+      urlPublica: publicUrlData.publicUrl
+    };
+  } catch (error) {
+    console.error("Error al subir archivo a Supabase:", error);
+    alert("Hubo un error al subir el archivo a la nube: " + error.message);
+    throw error;
+  }
 }
 
 // Temas oficiales del sílabo UPLA - Desarrollo de Aplicaciones I
