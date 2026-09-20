@@ -175,10 +175,3 @@ const TEMAS_INICIALES_TALLER = {
   15: "Compilación y Generación del Archivo Ejecutable (.jar)",
   16: "Sustentación del Proyecto Final y Cierre de Curso"
 };
-```[cite: 4]
-
-### ¿Qué cambió?
-* Ahora usamos la clave `portafolio_datos_v11` para asegurarnos de arrancar limpios[cite: 4].
-* Se eliminó el uso de `blob:` temporal y se reemplazó por la conversión directa integrada para que el botón **"Ver"** abra la evidencia en una pestaña nueva o la descargue correctamente sin expirar[cite: 4]. 
-
-Guarda los cambios, presiona **Ctrl + F5** en tu página de GitHub Pages y vuelve a subir tu archivo; verás que al hacer clic en **"Ver"** funcionará a la perfección[cite: 4].
