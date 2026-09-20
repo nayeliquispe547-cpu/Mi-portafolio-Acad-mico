@@ -146,62 +146,44 @@ function comprimirImagen(file, maxWidth = 1000, quality = 0.7) {
     reader.readAsDataURL(file);
   });
 }
-
 async function crearEntregaDesdeArchivo(file) {
-  const clienteSupabase = getSupabaseClient();
+  try {
+    let resultadoUrl = "";
 
-  if (clienteSupabase) {
-    try {
-      const nombreSeguro = (file.name || "archivo").replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_.-]/g, "_");
-      const ruta = `${Date.now()}-${nombreSeguro}`;
-      const bucket = CONFIG.supabaseBucket || "portafolio-evidencias";
-      const { data, error } = await clienteSupabase.storage
-        .from(bucket)
-        .upload(ruta, file, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: file.type || "application/octet-stream"
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      const { data: publicUrlData } = clienteSupabase.storage.from(bucket).getPublicUrl(data.path);
-
-      return {
-        tipo: "archivo",
-        nombre: file.name,
-        tipoMime: file.type,
-        tamanio: Math.round(file.size / 1024) + " KB",
-        dataUrl: publicUrlData.publicUrl,
-        blobUrl: publicUrlData.publicUrl,
-        urlPublica: publicUrlData.publicUrl
-      };
-    } catch (error) {
-      console.warn("Fallo al subir a Supabase; se usará respaldo local:", error);
+    // Si es una imagen, la comprimimos inteligentemente para que no sature el navegador
+    if (file.type && file.type.startsWith("image/")) {
+      const imagenComprimida = await comprimirImagen(file);
+      resultadoUrl = imagenComprimida || (await leerArchivoComoDataUrl(file));
+    } else {
+      // Si es un PDF, Word u otro tipo de documento, lo convertimos a DataURL permanente
+      resultadoUrl = await leerArchivoComoDataUrl(file);
     }
-  }
 
-  let dataUrl = null;
-  if (file.type.startsWith("image/")) {
-    dataUrl = await comprimirImagen(file);
+    // Retorna el objeto listo para que el botón "Ver" lo abra sin que caduque el enlace
+    return {
+      tipo: "archivo",
+      nombre: file.name,
+      tipoMime: file.type || "application/octet-stream",
+      tamanio: Math.round(file.size / 1024) + " KB",
+      dataUrl: resultadoUrl,
+      blobUrl: resultadoUrl,
+      urlPublica: resultadoUrl
+    };
+  } catch (error) {
+    console.error("Error al procesar el archivo:", error);
+    alert("Hubo un error al adjuntar el archivo: " + error.message);
+    throw error;
   }
-  if (!dataUrl) {
-    dataUrl = await leerArchivoComoDataUrl(file);
-  }
+}
 
-  const blobUrl = typeof URL !== "undefined" && URL.createObjectURL ? URL.createObjectURL(file) : dataUrl;
-
-  return {
-    tipo: "archivo",
-    nombre: file.name,
-    tipoMime: file.type,
-    tamanio: Math.round(file.size / 1024) + " KB",
-    dataUrl: dataUrl,
-    blobUrl: blobUrl,
-    urlPublica: dataUrl
-  };
+// Función auxiliar encargada de transformar el archivo a Base64 permanente para el botón "Ver"
+function leerArchivoComoDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target.result);
+    reader.onerror = () => reject(new Error("No se pudo leer el archivo."));
+    reader.readAsDataURL(file);
+  });
 }
 // Temas oficiales del sílabo UPLA - Desarrollo de Aplicaciones I
 const TEMAS_INICIALES_TALLER = {
