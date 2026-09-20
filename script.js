@@ -2,8 +2,8 @@ const CONFIG = {
   nombreEstudiante: "Nayeli Quispe Tica",
   codigoEstudiante: "U00057H",
   universidad: "Universidad Peruana Los Andes",
-  supabaseUrl:"https://jgmlreyazbiimdpspsn.supabase.co",
-  supabaseAnonKey:"sb_publishable_T2rEz5dfO53oVe2yXMFfCA_qTNuieYW"
+  supabaseUrl: "https://jgmlreyazbiimdpspsn.supabase.co",
+  supabaseAnonKey: "sb_publishable_T2rEz5dfO53oVe2yXMFfCA_qTNuieYW",
   supabaseBucket: "portafolio-evidencias"
 };
 
@@ -54,6 +54,26 @@ const TEMAS_INICIALES_ALGORITMO = {
   16: "Exposición de trabajo final y evaluación de desempeño final"
 };
 
+// Temas oficiales del sílabo UPLA - Desarrollo de Aplicaciones I
+const TEMAS_INICIALES_TALLER = {
+  1: "Inicialización del Proyecto y Ventanas Principales (JFrame)",
+  2: "Organización del Espacio con Contenedores (JPanel, JScrollPane)",
+  3: "Implementación de Menús de Navegación (JMenuBar, JMenu, JMenuItem)",
+  4: "Integración de Componentes Básicos y Validación Visual",
+  5: "Gestión de Archivos y Persistencia de Datos Locales (JFileChooser)",
+  6: "Personalización Visual Avanzada e Identidad del Proyecto (Look and Feel)",
+  7: "Diseño de Interfaces Complejas con Tablas y Listas (JTable, JList, JComboBox)",
+  8: "Orquestación de Mensajes, Diálogos de Usuario y Cierre de Fase (JOptionPane)",
+  9: "Conectividad y Configuración del Driver de Base de Datos (JDBC)",
+  10: "Operaciones de Persistencia: Inserción y Lectura de Datos (CRUD: Insert/Select)",
+  11: "Operaciones de Persistencia II: Actualización, Eliminación y Transacciones",
+  12: "Vinculación Dinámica y Cierre de la Capa de Datos",
+  13: "Migración a Arquitectura Cliente-Servidor e Hilos",
+  14: "Depuración, Manejo de Excepciones y Pruebas del Sistema",
+  15: "Compilación y Generación del Archivo Ejecutable (.jar)",
+  16: "Sustentación del Proyecto Final y Cierre de Curso"
+};
+
 function cargarDatos() {
   const claves = ["portafolio_datos_v10", "portafolio_datos_v9", "portafolio_datos_v8"];
 
@@ -93,7 +113,6 @@ function cargarDatos() {
 
 function guardarDatos(datos) {
   try {
-    // Creamos una copia ligera para limpiar cadenas base64 gigantes y evitar saturar localStorage
     const datosLigeros = JSON.parse(JSON.stringify(datos));
     for (let cursoId in datosLigeros) {
       for (let semanaId in datosLigeros[cursoId].semanas) {
@@ -191,23 +210,3 @@ async function crearEntregaDesdeArchivo(file) {
     throw error;
   }
 }
-
-// Temas oficiales del sílabo UPLA - Desarrollo de Aplicaciones I
-const TEMAS_INICIALES_TALLER = {
-  1: "Inicialización del Proyecto y Ventanas Principales (JFrame)",
-  2: "Organización del Espacio con Contenedores (JPanel, JScrollPane)",
-  3: "Implementación de Menús de Navegación (JMenuBar, JMenu, JMenuItem)",
-  4: "Integración de Componentes Básicos y Validación Visual",
-  5: "Gestión de Archivos y Persistencia de Datos Locales (JFileChooser)",
-  6: "Personalización Visual Avanzada e Identidad del Proyecto (Look and Feel)",
-  7: "Diseño de Interfaces Complejas con Tablas y Listas (JTable, JList, JComboBox)",
-  8: "Orquestación de Mensajes, Diálogos de Usuario y Cierre de Fase (JOptionPane)",
-  9: "Conectividad y Configuración del Driver de Base de Datos (JDBC)",
-  10: "Operaciones de Persistencia: Inserción y Lectura de Datos (CRUD: Insert/Select)",
-  11: "Operaciones de Persistencia II: Actualización, Eliminación y Transacciones",
-  12: "Vinculación Dinámica y Cierre de la Capa de Datos",
-  13: "Migración a Arquitectura Cliente-Servidor e Hilos",
-  14: "Depuración, Manejo de Excepciones y Pruebas del Sistema",
-  15: "Compilación y Generación del Archivo Ejecutable (.jar)",
-  16: "Sustentación del Proyecto Final y Cierre de Curso"
-};
