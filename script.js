@@ -80,7 +80,6 @@ function cargarDatos() {
     }
   }
 
-  // Si no encuentra nada válido en ninguna versión, genera la estructura inicial limpia para los cursos
   let datosIniciales = {};
   CURSOS.forEach(curso => {
     datosIniciales[curso.id] = { semanas: {} };
@@ -109,7 +108,7 @@ function guardarDatos(datos) {
     const datosLigeros = JSON.parse(JSON.stringify(datos));
     localStorage.setItem("portafolio_datos_v11", JSON.stringify(datosLigeros));
   } catch (error) {
-    console.warn("Almacenamiento local al límite, omitiendo aviso:", error);
+    console.warn("Almacenamiento local al límite:", error);
   }
 }
 
@@ -122,7 +121,7 @@ function leerArchivoComoDataUrl(file) {
   });
 }
 
-function comprimirImagen(file, maxWidth = 1000, quality = 0.7) {
+function comprimirImagen(file, maxWidth = 900, quality = 0.65) {
   if (!file || !file.type || !file.type.startsWith("image/")) {
     return Promise.resolve(null);
   }
@@ -177,3 +176,41 @@ async function crearEntregaDesdeArchivo(file) {
     throw error;
   }
 }
+
+// Función global segura para abrir o descargar evidencias guardadas al hacer clic en "Ver"
+window.abrirEvidencia = function(url, nombre) {
+  if (!url) {
+    alert("No hay archivo disponible para mostrar.");
+    return;
+  }
+  
+  if (url.startsWith("data:")) {
+    // Si es un archivo en Base64, abrimos una nueva pestaña y escribimos el visor/descargador
+    const ventana = window.open();
+    if (ventana) {
+      ventana.document.write(`
+        <html>
+          <head><title>Visualizar: ${nombre || 'Evidencia'}</title></head>
+          <body style="margin:0; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif;">
+            <div style="background:#222; color:#fff; padding:10px 20px; width:100%; display:flex; justify-content:space-between; align-items:center; box-sizing:border-box;">
+              <span style="font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;">${nombre || 'Archivo adjunto'}</span>
+              <a href="${url}" download="${nombre || 'archivo'}" style="background:#4f46e5; color:#fff; padding:8px 16px; text-decoration:none; border-radius:4px; font-size:14px;">Descargar Archivo</a>
+            </div>
+            <iframe src="${url}" style="width:100%; height:calc(100vh - 50px); border:none; background:#fff;"></iframe>
+          </body>
+        </html>
+      `);
+      ventana.document.close();
+    } else {
+      // Si el navegador bloquea la ventana emergente, forzamos la descarga directa
+      const enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.download = nombre || "archivo";
+      document.body.appendChild(enlace);
+      enlace.click();
+      document.body.removeChild(enlace);
+    }
+  } else {
+    window.open(url, "_blank");
+  }
+};
