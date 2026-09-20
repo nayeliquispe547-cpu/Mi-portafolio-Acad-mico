@@ -44,7 +44,7 @@ const TEMAS_INICIALES_ALGORITMO = {
 };
 
 function cargarDatos() {
-  const claves = ["portafolio_datos_v11", "portafolio_datos_v10", "portafolio_datos_v9", "portafolio_datos_v8"];
+  const claves = ["portafolio_datos_v10", "portafolio_datos_v9", "portafolio_datos_v8"];
 
   for (const clave of claves) {
     const guardado = localStorage.getItem(clave);
@@ -83,10 +83,29 @@ function cargarDatos() {
 function guardarDatos(datos) {
   try {
     const datosLigeros = JSON.parse(JSON.stringify(datos));
-    // Guardamos con una clave nueva (v11) para limpiar cualquier caché corrupta anterior
-    localStorage.setItem("portafolio_datos_v11", JSON.stringify(datosLigeros));
+    // Guardamos solo la estructura esencial de texto y temas, omitiendo archivos pesados del caché local
+    for (let cursoId in datosLigeros) {
+      for (let semanaId in datosLigeros[cursoId].semanas) {
+        let entregas = datosLigeros[cursoId].semanas[semanaId].entregas;
+        entregas.forEach(item => {
+          if (item.dataUrl && item.dataUrl.startsWith("blob:")) {
+            item.dataUrl = "";
+            item.blobUrl = "";
+            item.urlPublica = "";
+          }
+        });
+      }
+    }
+    localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
   } catch (error) {
-    console.warn("Almacenamiento local al límite, omitiendo aviso molesto:", error);
+    // Si se vuelve a llenar, lo silenciamo para que NUNCA vuelva a aparecer la molesta alerta
+    console.warn("Aviso de almacenamiento omitido:", error);
+  }
+}
+        
+    localStorage.setItem("portafolio_datos_v10", JSON.stringify(datosLigeros));
+  } catch (error) {
+    console.error("No se pudo guardar en localStorage:", error);
   }
 }
 
@@ -130,27 +149,20 @@ function comprimirImagen(file, maxWidth = 1000, quality = 0.7) {
 
 async function crearEntregaDesdeArchivo(file) {
   try {
-    let resultadoUrl = "";
-
-    // Si es imagen, la comprimimos; si es PDF u otro archivo, lo convertimos a DataURL permanente
-    if (file.type && file.type.startsWith("image/")) {
-      const imagenComprimida = await comprimirImagen(file);
-      resultadoUrl = imagenComprimida || (await leerArchivoComoDataUrl(file));
-    } else {
-      resultadoUrl = await leerArchivoComoDataUrl(file);
-    }
+    // Creamos un enlace Blob local súper rápido y 100% libre de errores de red
+    const urlLocal = URL.createObjectURL(file);
 
     return {
       tipo: "archivo",
       nombre: file.name,
       tipoMime: file.type || "application/octet-stream",
       tamanio: Math.round(file.size / 1024) + " KB",
-      dataUrl: resultadoUrl,
-      blobUrl: resultadoUrl,
-      urlPublica: resultadoUrl
+      dataUrl: urlLocal,
+      blobUrl: urlLocal,
+      urlPublica: urlLocal
     };
   } catch (error) {
-    console.error("Error al procesar el archivo:", error);
+    console.error("Error al procesar el archivo local:", error);
     alert("Hubo un error al adjuntar el archivo: " + error.message);
     throw error;
   }
