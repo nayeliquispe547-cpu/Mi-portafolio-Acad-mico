@@ -3,7 +3,7 @@ const CONFIG = {
   codigoEstudiante: "U00057H",
   universidad: "Universidad Peruana Los Andes",
   supabaseUrl:"https://jgmlreyazbiimdpspsn.supabase.co",
-  supabaseAnonKey:"sb_publishable_T2rEz5dfO53oVe2yXMFfCA_qTNuieYW",
+  supabaseAnonKey:"sb_publishable_T2rEz5dfO53oVe2yXMFfCA_qTNuieYW"
   supabaseBucket: "portafolio-evidencias"
 };
 
