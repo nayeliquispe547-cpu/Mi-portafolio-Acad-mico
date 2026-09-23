@@ -26,9 +26,9 @@ const CURSOS = [
 
 // Temas oficiales extraídos del sílabo UPLA para Algoritmos y Estructuras de Datos
 const TEMAS_INICIALES_ALGORITMO = {
-  1: "Arreglos Bidimensionales, representación y aplicaciones",
-  2: "Arreglos paralelos, representación y uso de arreglos de objetos",
-  3: "Clase ArrayList y Vector (Operaciones básicas)",
+  1: "Arreglos Unidimensional",
+  2: "Arreglos Bidimensionales, representación y uso de arreglos de objetos",
+  3: "Arreglos paralelo",
   4: "Clase Linked List y sus operaciones",
   5: "Pilas: TDA pila, definición, representación y operaciones",
   6: "Pilas de objetos y aplicaciones con pilas (Clase Stack)",
@@ -46,7 +46,7 @@ const TEMAS_INICIALES_ALGORITMO = {
 
 // Temas oficiales del sílabo UPLA - Desarrollo de Aplicaciones I (Taller de Apps)
 const TEMAS_INICIALES_TALLER = {
-  1: "Inicialización del Proyecto y Ventanas Principales (JFrame)",
+  1: "Diseño en Figma",
   2: "Organización del Espacio con Contenedores (JPanel, JScrollPane)",
   3: "Implementación de Menús de Navegación (JMenuBar, JMenu, JMenuItem)",
   4: "Integración de Componentes Básicos y Validación Visual",
